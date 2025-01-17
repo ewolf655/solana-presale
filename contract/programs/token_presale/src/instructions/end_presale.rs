@@ -3,19 +3,19 @@ use anchor_lang::prelude::*;
 use crate::state::PresaleInfo;
 use crate::constants::PRESALE_SEED;
 
-// Start the presale
-pub fn start_presale(
-    ctx: Context<StartPresale>,
-    start_time: u64
+// End the presale
+pub fn end_presale(
+    ctx: Context<EndPresale>,
+    end_time: u64
 ) -> Result<()> {
     
     let presale = &mut ctx.accounts.presale_info;
 
-    presale.start_time = start_time;
-    presale.is_live = true;
+    presale.end_time = end_time;
+    presale.is_live = false;
 
     msg!(
-        "Presale has started for token: {}",
+        "Presale has ended for token: {}",
         presale.token_mint_address
     );
 
@@ -24,9 +24,9 @@ pub fn start_presale(
 
 #[derive(Accounts)]
 #[instruction(
-    start_time: u64
+    end_time: u64
 )]
-pub struct StartPresale<'info> {
+pub struct EndPresale<'info> {
     
     #[account(
         mut,

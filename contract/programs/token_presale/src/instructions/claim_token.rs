@@ -11,24 +11,21 @@ use crate::state::{PresaleInfo, UserInfo};
 use crate::constants::{PRESALE_SEED, USER_SEED};
 
 pub fn claim_token(
-    ctx: Context<ClaimToken>, 
-    identifier: u8
+    ctx: Context<ClaimToken>
 ) -> Result<()> {
 
     let presale_info = &mut ctx.accounts.presale_info;
     let bump = &[presale_info.bump];
 
-    let cur_timestamp = u64::try_from(Clock::get()?.unix_timestamp).unwrap();;
-
     // get time and compare with start and end time
-    if presale_info.end_time > cur_timestamp {
+    if presale_info.is_live == true {
         msg!("Presale not ended yet.");
         return Err(PresaleError::PresaleNotEnded.into());
     }
 
     let user_info = &mut ctx.accounts.user_info;
-    let claimAmount = user_info.buy_token_amount - user_info.claim_amount;
-    user_info.claim_amount = user_info.claim_amount + claimAmount;
+    let claim_amount = user_info.buy_token_amount - user_info.claim_amount;
+    user_info.claim_amount = user_info.claim_amount + claim_amount;
 
     msg!("Transferring presale tokens to buyer {}...", &ctx.accounts.buyer.key());
     msg!("Mint: {}", &ctx.accounts.presale_token_mint_account.to_account_info().key());   
@@ -42,9 +39,9 @@ pub fn claim_token(
                 to: ctx.accounts.buyer_presale_token_associated_token_account.to_account_info(),
                 authority: ctx.accounts.presale_info.to_account_info(),
             },
-            &[&[PRESALE_SEED, ctx.accounts.presale_authority.key().as_ref(), [identifier].as_ref(), bump][..]],
+            &[&[PRESALE_SEED, ctx.accounts.presale_authority.key().as_ref(), bump][..]],
         ),
-        claimAmount,
+        claim_amount,
     )?;
 
     msg!("Presale tokens transferred successfully.");
@@ -53,9 +50,7 @@ pub fn claim_token(
 }
 
 #[derive(Accounts)]
-#[instruction(
-    identifier: u8
-)]
+#[instruction()]
 pub struct ClaimToken<'info> {
     // Presale token accounts
     #[account(mut)]
@@ -79,14 +74,14 @@ pub struct ClaimToken<'info> {
         init_if_needed,
         payer = buyer,
         space = 8 + std::mem::size_of::<UserInfo>(),
-        seeds = [USER_SEED, presale_authority.key().as_ref(), buyer.key().as_ref(), [identifier].as_ref()],
+        seeds = [USER_SEED, presale_authority.key().as_ref(), buyer.key().as_ref()],
         bump
     )]
     pub user_info: Box<Account<'info, UserInfo>>,
     
     #[account(
         mut,
-        seeds = [PRESALE_SEED, presale_authority.key().as_ref(), [identifier].as_ref()],
+        seeds = [PRESALE_SEED, presale_authority.key().as_ref()],
         bump = presale_info.bump
     )]
     pub presale_info: Box<Account<'info, PresaleInfo>>,

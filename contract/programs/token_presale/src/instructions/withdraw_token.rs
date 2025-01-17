@@ -12,22 +12,27 @@ use crate::errors::PresaleError;
 
 pub fn withdraw_token(
     ctx: Context<WithdrawToken>, 
-    amount: u64,
-    identifier: u8
+    amount: u64
 ) -> Result<()> {
-    let presale_info = &mut ctx.accounts.presale_info;
-    let bump = &[presale_info.bump];
-
-    if presale_info.deposit_token_amount < amount {
+    // Validate token availability with an immutable borrow
+    if ctx.accounts.presale_info.deposit_token_amount < amount {
         return Err(PresaleError::InsufficientFund.into());
     }
 
-    presale_info.deposit_token_amount = presale_info.deposit_token_amount - amount;
+    msg!("Withdrawing presale tokens from the contract...");
+    msg!("Mint: {}", &ctx.accounts.presale_token_mint_account.to_account_info().key());
+    msg!("From Token Address: {}", &ctx.accounts.presale_presale_token_associated_token_account.key());
+    msg!("To Token Address: {}", &ctx.accounts.buyer_presale_token_associated_token_account.key());
 
-    msg!("Transferring presale tokens to buyer {}...", &ctx.accounts.buyer.key());
-    msg!("Mint: {}", &ctx.accounts.presale_token_mint_account.to_account_info().key());   
-    msg!("From Token Address: {}", &ctx.accounts.presale_presale_token_associated_token_account.key());     
-    msg!("To Token Address: {}", &ctx.accounts.buyer_presale_token_associated_token_account.key());     
+    let bump = &[ctx.accounts.presale_info.bump];
+    let binding = ctx.accounts.presale_authority.key();
+    let presale_seeds = &[
+        PRESALE_SEED,
+        binding.as_ref(),
+        bump,
+    ];
+
+    // Perform the token transfer with an immutable borrow
     token::transfer(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
@@ -36,12 +41,16 @@ pub fn withdraw_token(
                 to: ctx.accounts.buyer_presale_token_associated_token_account.to_account_info(),
                 authority: ctx.accounts.presale_info.to_account_info(),
             },
-            &[&[PRESALE_SEED, ctx.accounts.presale_authority.key().as_ref(), [identifier].as_ref(), bump][..]],
+            &[presale_seeds],
         ),
         amount,
     )?;
 
-    msg!("Presale tokens transferred successfully.");
+    msg!("Tokens withdrawn successfully.");
+
+    // Mutably update the deposit_token_amount after the transfer
+    let presale_info = &mut ctx.accounts.presale_info;
+    presale_info.deposit_token_amount -= amount;
 
     Ok(())
 }
@@ -49,8 +58,7 @@ pub fn withdraw_token(
 
 #[derive(Accounts)]
 #[instruction(
-    amount: u64,
-    identifier: u8
+    amount: u64
 )]
 pub struct WithdrawToken<'info> {
     // Presale token accounts
@@ -73,7 +81,7 @@ pub struct WithdrawToken<'info> {
 
     #[account(
         mut,
-        seeds = [PRESALE_SEED, presale_authority.key().as_ref(), [identifier].as_ref()],
+        seeds = [PRESALE_SEED, presale_authority.key().as_ref()],
         bump = presale_info.bump
     )]
     pub presale_info: Box<Account<'info, PresaleInfo>>,
@@ -82,7 +90,7 @@ pub struct WithdrawToken<'info> {
     pub buyer_authority: SystemAccount<'info>,
     #[account(
         mut,
-        constraint = buyer.key() == presale_info.authority1.key()
+        constraint = buyer.key() == presale_info.authority.key()
     )]
     pub buyer: Signer<'info>,
     pub rent: Sysvar<'info, Rent>,

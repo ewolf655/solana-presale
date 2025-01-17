@@ -14,12 +14,12 @@ pub enum PresaleError {
     AlreadyMarked,
     #[msg("Presale not started yet")]
     PresaleNotStarted,
-    #[msg("Presale already ended")]
-    PresaleEnded,
-    #[msg("Token amount mismatch")]
-    TokenAmountMismatch,
     #[msg("Insufficient Tokens")]
     InsufficientFund,
+    #[msg("Wallet hardcap overflow")]
+    WalletHardcapOverflow,
+    #[msg("Global hardcap overflow")]
+    GolbalHardcapOverflow,
     #[msg("Presale not ended yet")]
     PresaleNotEnded
 }

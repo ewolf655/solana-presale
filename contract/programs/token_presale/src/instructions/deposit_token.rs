@@ -11,11 +11,10 @@ use crate::constants::PRESALE_SEED;
 
 pub fn deposit_token(
     ctx: Context<DepositToken>, 
-    amount: u64,
-    identifier: u8,
+    amount: u64
 ) -> Result<()> {
 
-    msg!("Depositing presale tokens to presale {}...", identifier);
+    msg!("Depositing presale tokens to the contract...");
     msg!("Mint: {}", &ctx.accounts.mint_account.to_account_info().key());   
     msg!("From Token Address: {}", &ctx.accounts.from_associated_token_account.key());     
     msg!("To Token Address: {}", &ctx.accounts.to_associated_token_account.key());     
@@ -42,8 +41,7 @@ pub fn deposit_token(
 
 #[derive(Accounts)]
 #[instruction(
-    amount: u64,
-    identifier: u8,
+    amount: u64
 )]
 pub struct DepositToken<'info> {
     #[account(mut)]
@@ -66,7 +64,7 @@ pub struct DepositToken<'info> {
     pub to_associated_token_account: Account<'info, token::TokenAccount>,
     #[account(
         mut,
-        seeds = [PRESALE_SEED, from_authority.key().as_ref(), [identifier].as_ref()],
+        seeds = [PRESALE_SEED, from_authority.key().as_ref()],
         bump = presale_info.bump
     )]
     pub presale_info: Box<Account<'info, PresaleInfo>>,

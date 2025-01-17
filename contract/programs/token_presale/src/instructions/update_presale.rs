@@ -8,17 +8,14 @@ pub fn update_presale(
     ctx: Context<UpdatePresale>,
     max_token_amount_per_address: u64,
     price_per_token: u64,
-    softcap_amount: u64,
     hardcap_amount: u64,
     start_time: u64,
-    end_time: u64,
-    identifier: u8
+    end_time: u64
 ) -> Result<()> {
     
     let presale_info = &mut ctx.accounts.presale_info;
     presale_info.max_token_amount_per_address = max_token_amount_per_address;
     presale_info.price_per_token = price_per_token;
-    presale_info.softcap_amount = softcap_amount;
     presale_info.hardcap_amount = hardcap_amount;
     presale_info.start_time = start_time;
     presale_info.end_time = end_time;
@@ -30,17 +27,15 @@ pub fn update_presale(
 #[instruction(
     max_token_amount_per_address: u64,
     price_per_token: u64,
-    softcap_amount: u64,
     hardcap_amount: u64,
     start_time: u64,
-    end_time: u64,
-    identifier: u8
+    end_time: u64
 )]
 pub struct UpdatePresale<'info> {
     // Initialize the presale_detils account
     #[account(
         mut,
-        seeds = [PRESALE_SEED, authority.key().as_ref(), [identifier].as_ref()],
+        seeds = [PRESALE_SEED, authority.key().as_ref()],
         bump = presale_info.bump
     )]
     pub presale_info: Box<Account<'info, PresaleInfo>>,

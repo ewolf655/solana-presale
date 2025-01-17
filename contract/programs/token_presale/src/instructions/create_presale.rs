@@ -3,18 +3,16 @@ use anchor_lang::prelude::*;
 use crate::state::PresaleInfo;
 use crate::constants::PRESALE_SEED;
 
-// Edit the details for a presale
+// create and initialize presale
 pub fn create_presale(
     ctx: Context<CreatePresale>,
     token_mint_address: Pubkey,
     quote_token_mint_address: Pubkey,
-    softcap_amount:u64,
     hardcap_amount:u64,
     max_token_amount_per_address: u64,
     price_per_token: u64,
     start_time: u64,
-    end_time: u64,
-    identifier: u8
+    end_time: u64
 ) -> Result<()> {
     
     let presale_info = &mut ctx.accounts.presale_info;
@@ -28,14 +26,11 @@ pub fn create_presale(
     presale_info.sold_token_amount = 0;
     presale_info.start_time = start_time;
     presale_info.end_time = end_time;
-    presale_info.softcap_amount = softcap_amount;
     presale_info.hardcap_amount = hardcap_amount;
     presale_info.max_token_amount_per_address = max_token_amount_per_address;
     presale_info.price_per_token = price_per_token;
-    presale_info.identifier = identifier;
     presale_info.authority = authority.key();
-    presale_info.authority1 = authority.key();
-    presale_info.bump = *ctx.bumps.get("presale_info").unwrap();
+    presale_info.bump = ctx.bumps.presale_info;
 
     msg!(
         "Presale has created for token: {}",
@@ -49,13 +44,11 @@ pub fn create_presale(
 #[instruction(
     token_mint_address: Pubkey,
     quote_token_mint_address: Pubkey,
-    softcap_amount:u64,
     hardcap_amount:u64,
     max_token_amount_per_address: u64,
     price_per_token: u64,
     start_time: u64,
-    end_time: u64,
-    identifier: u8
+    end_time: u64
 )]
 pub struct CreatePresale<'info> {
     // Initialize the presale_info account
@@ -63,7 +56,7 @@ pub struct CreatePresale<'info> {
         init,
         payer = authority,
         space = 8 + std::mem::size_of::<PresaleInfo>(),
-        seeds = [PRESALE_SEED.as_ref(), authority.key().as_ref(), [identifier].as_ref()],
+        seeds = [PRESALE_SEED.as_ref(), authority.key().as_ref()],
         bump
     )]
     pub presale_info: Box<Account<'info, PresaleInfo>>,
